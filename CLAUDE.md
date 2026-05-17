@@ -13,18 +13,18 @@ Hotel Revenue Management System (HMRM) for Sakala Resort Bali — combines a Nex
 bun dev              # Next.js dev server on port 3000 (logs to dev.log)
 bun lint             # ESLint
 
-# Production build
-bun build            # next build + copy static assets to standalone
+# Production build (Vercel: prisma migrate deploy + next build)
+bun build            # migrate deploy + next build
+bun build:standalone # next build + copy assets for local standalone
 bun start            # Run standalone server (production)
 
-# Database
-bun db:push          # Push schema changes to SQLite (no migration file)
-bun db:generate      # Regenerate Prisma client after schema changes
-bun db:migrate       # Create and apply migration
-bun db:reset         # Reset DB and re-run migrations
-
-# Seed database
-bunx prisma db seed  # Populates Sakala Resort: 80 rooms, 90-day inventory, ~200 bookings
+# Database (Neon — DATABASE_URL pooled, DIRECT_URL for migrations)
+bun db:generate      # Regenerate Prisma client
+bun db:migrate       # Create and apply migration (dev)
+bun db:migrate:deploy # Apply migrations (production / Vercel)
+bun db:push          # Push schema without migration (dev only)
+bun db:seed          # Sakala Resort demo data
+bun db:reset         # Reset DB, migrations, and seed
 
 # Python microservices (Docker)
 docker compose -f docker-compose.services.yml up -d    # Start all 5 services
@@ -61,7 +61,7 @@ Optimization     :8009  — SciPy constraint solver for price bounds
 
 Services communicate via HTTP. The HMRM Engine implements a **control variate technique** using ML predictions to reduce Monte Carlo variance. Pricing mode (ML-only / hybrid / full MC) is selected dynamically based on demand signals.
 
-### Database (`/prisma/schema.prisma`, SQLite)
+### Database (`/prisma/schema.prisma`, Neon Postgres)
 Key models: `Property`, `RoomType`, `Booking`, `InventoryDaily`, `PricingDecision`, `FeatureStore`. Prisma client is instantiated as a singleton in `/src/lib/db.ts`.
 
 ### State Management
@@ -83,7 +83,7 @@ Key models: `Property`, `RoomType`, `Booking`, `InventoryDaily`, `PricingDecisio
 | Forms | React Hook Form + Zod |
 | Charts | Recharts |
 | Animation | Framer Motion |
-| Database | SQLite + Prisma ORM 6 |
+| Database | Neon Postgres + Prisma ORM 6 |
 | Backend | Python 3.10, FastAPI, Uvicorn |
 | ML/Data | LightGBM, NumPy, SciPy, Scikit-learn, Pandas |
 | Runtime | Bun |
