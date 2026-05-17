@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { KPICards } from './KPICards';
 import { PricingGrid } from './PricingGrid';
 import { PricingChart } from './PricingChart';
@@ -47,9 +48,30 @@ function QuickActions() {
   );
 }
 
+type DashboardTab = 'overview' | 'pricing' | 'analytics' | 'forecast';
+
 function DashboardContent() {
-  const { pricingMode } = useDashboardStore();
-  
+  const { activeNavSection, setActiveNavSection } = useDashboardStore();
+  const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+
+  useEffect(() => {
+    if (activeNavSection === 'pricing') {
+      setActiveTab('pricing');
+    } else if (activeNavSection === 'dashboard') {
+      setActiveTab('overview');
+    }
+  }, [activeNavSection]);
+
+  const handleTabChange = (value: string) => {
+    const tab = value as DashboardTab;
+    setActiveTab(tab);
+    if (tab === 'pricing') {
+      setActiveNavSection('pricing');
+    } else {
+      setActiveNavSection('dashboard');
+    }
+  };
+
   return (
     <>
       {/* Quick Actions / Status Bar */}
@@ -59,7 +81,7 @@ function DashboardContent() {
       <KPICards />
       
       {/* Main Content Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <TabsTrigger value="overview" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
@@ -179,6 +201,8 @@ export function RevenueDashboard() {
       case 'settings':
         return <SettingsView />;
       case 'dashboard':
+      case 'pricing':
+        return <DashboardContent />;
       default:
         return <DashboardContent />;
     }
