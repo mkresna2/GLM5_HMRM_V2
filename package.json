@@ -9,12 +9,12 @@
     "postinstall": "prisma generate",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset"
+    "db:push": "bun --env-file=.env.local prisma db push",
+    "db:generate": "bun --env-file=.env.local prisma generate",
+    "db:migrate": "bun --env-file=.env.local prisma migrate dev",
+    "db:migrate:deploy": "bun --env-file=.env.local prisma migrate deploy",
+    "db:seed": "bun --env-file=.env.local prisma db seed",
+    "db:reset": "bun --env-file=.env.local prisma migrate reset"
   },
   "prisma": {
     "seed": "bun prisma/seed.ts"
