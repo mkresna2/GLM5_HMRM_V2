@@ -3,6 +3,7 @@ import os
 import sys
 import numpy as np
 from typing import Dict, Any
+from pydantic import ConfigDict
 
 # Add common to path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,6 +19,8 @@ class MLPredictRequest(BaseResponse):
     price_vector: Dict[str, float]
 
 class MLPredictResponse(BaseResponse):
+    model_config = ConfigDict(protected_namespaces=())
+
     expected_revenue: float
     expected_net_revenue: float
     expected_occupancy: Dict[str, float]
