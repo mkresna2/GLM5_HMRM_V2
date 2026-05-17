@@ -7,6 +7,22 @@ const generateSessionId = () => {
   return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+/** JSON persist stores dates as strings; revive on rehydrate. */
+const parseStoredDate = (value: Date | string | null | undefined): Date | null => {
+  if (value == null) return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  const date = new Date(value);
+  return isNaN(date.getTime()) ? null : date;
+};
+
+const reviveDateFields = <T extends { arrivalDate: Date | null; departureDate: Date | null }>(
+  form: T
+): T => ({
+  ...form,
+  arrivalDate: parseStoredDate(form.arrivalDate),
+  departureDate: parseStoredDate(form.departureDate),
+});
+
 // Get or create session ID
 const getSessionId = () => {
   if (typeof window === 'undefined') return generateSessionId();
@@ -223,6 +239,21 @@ export const useBookingStore = create<BookingStore>()(
         searchForm: state.searchForm,
         checkout: state.checkout,
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<BookingStore>;
+        return {
+          ...currentState,
+          ...persisted,
+          searchForm: reviveDateFields({
+            ...currentState.searchForm,
+            ...persisted.searchForm,
+          }),
+          checkout: reviveDateFields({
+            ...currentState.checkout,
+            ...persisted.checkout,
+          }),
+        };
+      },
     }
   )
 );
@@ -269,6 +300,18 @@ export const useDashboardStore = create<DashboardStore>()(
     {
       name: 'hmrm-dashboard-storage',
       storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<DashboardStore>;
+        const dateRange = persisted.dateRange ?? currentState.dateRange;
+        return {
+          ...currentState,
+          ...persisted,
+          dateRange: {
+            start: parseStoredDate(dateRange.start),
+            end: parseStoredDate(dateRange.end),
+          },
+        };
+      },
     }
   )
 );
