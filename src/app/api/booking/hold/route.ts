@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
           roomTypeId: roomType.id,
           ratePlanId: ratePlan.id,
           sessionId: session_id,
-          searchId,
+          searchId: search_id,
           arrivalDate,
           departureDate,
           los,
