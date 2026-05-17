@@ -13,11 +13,11 @@
     "db:generate": "bun --env-file=.env.local prisma generate",
     "db:migrate": "bun --env-file=.env.local prisma migrate dev",
     "db:migrate:deploy": "bun --env-file=.env.local prisma migrate deploy",
-    "db:seed": "bun --env-file=.env.local prisma db seed",
+    "db:seed": "bun --env-file=.env.local prisma generate && bun --env-file=.env.local prisma db seed",
     "db:reset": "bun --env-file=.env.local prisma migrate reset"
   },
   "prisma": {
-    "seed": "bun prisma/seed.ts"
+    "seed": "bun --env-file=.env.local prisma/seed.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
