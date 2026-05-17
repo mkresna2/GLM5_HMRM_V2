@@ -63,9 +63,6 @@ export async function POST(request: NextRequest) {
     // Get hold
     const hold = await db.roomHold.findUnique({
       where: { holdId: hold_id },
-      include: {
-        property: true,
-      },
     });
     
     if (!hold) {
