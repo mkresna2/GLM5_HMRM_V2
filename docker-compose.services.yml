@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  pricing-gateway:
+    build: 
+      context: ./mini-services
+      dockerfile: Dockerfile.generic
+    command: python pricing-gateway/main.py
+    ports:
+      - "8001:8001"
+    environment:
+      - HMRM_ENGINE_URL=http://hmrm-engine:8002
+    depends_on:
+      - hmrm-engine
+
+  hmrm-engine:
+    build:
+      context: ./mini-services
+      dockerfile: Dockerfile.generic
+    command: python hmrm-engine/main.py
+    ports:
+      - "8002:8002"
+    environment:
+      - ML_SERVICE_URL=http://ml-inference:8003
+      - MC_SERVICE_URL=http://monte-carlo:8004
+    depends_on:
+      - ml-inference
+      - monte-carlo
+
+  ml-inference:
+    build:
+      context: ./mini-services
+      dockerfile: Dockerfile.generic
+    command: python ml-inference-service/main.py
+    ports:
+      - "8003:8003"
+
+  monte-carlo:
+    build:
+      context: ./mini-services
+      dockerfile: Dockerfile.generic
+    command: python monte-carlo-service/main.py
+    ports:
+      - "8004:8004"
+
+  optimization-service:
+    build:
+      context: ./mini-services
+      dockerfile: Dockerfile.generic
+    command: python optimization-service/main.py
+    ports:
+      - "8009:8009"

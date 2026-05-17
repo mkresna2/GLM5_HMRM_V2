@@ -1,0 +1,306 @@
+// This is your Prisma schema file,
+// Hotel Revenue Management & Booking Engine (HMRM)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============ CORE DOMAIN MODELS ============
+
+/// Hotel property information
+model Property {
+  id                  String   @id @default(cuid())
+  propertyId          String   @unique // External ID like "H001"
+  name                String
+  timezone            String   @default("Asia/Makassar")
+  currency            String   @default("USD")
+  totalRooms          Int
+  overbookingTolerance Float   @default(0.05)
+  riskLambda          Float    @default(0.25)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  roomTypes           RoomType[]
+  ratePlans           RatePlan[]
+  bookings            Booking[]
+  inventoryDaily      InventoryDaily[]
+  pricingDecisions    PricingDecision[]
+  amenities           Amenity[]
+  addons              Addon[]
+}
+
+/// Room type category (Standard, Deluxe, Suite)
+model RoomType {
+  id                String   @id @default(cuid())
+  propertyId        String
+  roomTypeCode      String   // STD, DLX, STE
+  name              String
+  description       String?
+  totalInventory    Int
+  minPrice          Float
+  maxPrice          Float
+  defaultPrice      Float
+  currentPrice      Float    @default(0)
+  upgradeFrom       String?  // Room type code this can be upgraded from
+  upgradeProb       Float    @default(0.0)
+  imageUrl          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  property          Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  inventoryDaily    InventoryDaily[]
+  bookings          Booking[]
+  roomAmenities     RoomAmenity[]
+
+  @@unique([propertyId, roomTypeCode])
+}
+
+/// Rate plan (BAR, Non-Refundable, etc.)
+model RatePlan {
+  id                    String   @id @default(cuid())
+  propertyId            String
+  ratePlanCode          String   // BAR, NON_REF, etc.
+  name                  String
+  description           String?
+  isRefundable          Boolean  @default(true)
+  cancelDeadlineHours   Int      @default(48)
+  minLos                Int      @default(1)
+  maxLos                Int      @default(30)
+  discountPct           Float    @default(0)
+  includesBreakfast     Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  property              Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  bookings              Booking[]
+
+  @@unique([propertyId, ratePlanCode])
+}
+
+/// Amenity for rooms (ocean_view, balcony, king_bed, etc.)
+model Amenity {
+  id          String   @id @default(cuid())
+  propertyId  String
+  code        String   // ocean_view, balcony, king_bed, etc.
+  name        String
+  icon        String?
+  createdAt   DateTime @default(now())
+
+  property    Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  rooms       RoomAmenity[]
+
+  @@unique([propertyId, code])
+}
+
+/// Many-to-many relation between RoomType and Amenity
+model RoomAmenity {
+  id          String @id @default(cuid())
+  roomTypeId  String
+  amenityId   String
+
+  roomType    RoomType @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+  amenity     Amenity  @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@unique([roomTypeId, amenityId])
+}
+
+/// Addon items (breakfast, airport transfer, etc.)
+model Addon {
+  id              String   @id @default(cuid())
+  propertyId      String
+  code            String   // BREAKFAST, AIRPORT_TRANSFER, etc.
+  name            String
+  description     String?
+  pricePerNight   Boolean  @default(false)
+  price           Float
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, code])
+}
+
+/// Guest booking record
+model Booking {
+  id                  String   @id @default(cuid())
+  bookingId           String   @unique // BK-2026-123456
+  propertyId          String
+  roomTypeId          String
+  ratePlanId          String
+  channel             String   @default("direct") // direct, booking_com, expedia, corporate
+  arrivalDate         DateTime
+  departureDate       DateTime
+  los                 Int      // Length of stay
+  adults              Int      @default(2)
+  children            Int      @default(0)
+  pricePerNight       Float
+  grossRevenue        Float
+  commissionRate      Float    @default(0)
+  commissionAmount    Float    @default(0)
+  netRevenue          Float
+  addonsTotal         Float    @default(0)
+  leadTimeDays        Int?
+  isRefundable        Boolean  @default(true)
+  cancellationPolicy  String?
+  status              String   @default("confirmed") // confirmed, cancelled, no_show, checked_in
+  
+  // Guest information
+  guestFirstName      String
+  guestLastName       String
+  guestEmail          String
+  guestPhone          String?
+  guestCountry        String?
+  specialRequests     String?
+  
+  // Cancellation info
+  cancelledAt         DateTime?
+  cancellationReason  String?
+  refundAmount        Float?
+  
+  // Session tracking
+  sessionId           String?
+  searchId            String?
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  property            Property   @relation(fields: [propertyId], references: [id])
+  roomType            RoomType   @relation(fields: [roomTypeId], references: [id])
+  ratePlan            RatePlan   @relation(fields: [ratePlanId], references: [id])
+  bookingAddons       BookingAddon[]
+  events              BookingEvent[]
+}
+
+/// Booking addon selections
+model BookingAddon {
+  id          String @id @default(cuid())
+  bookingId   String
+  addonId     String
+  quantity    Int    @default(1)
+  totalPrice  Float
+
+  booking     Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([bookingId, addonId])
+}
+
+/// Daily inventory snapshot per room type
+model InventoryDaily {
+  id              String   @id @default(cuid())
+  propertyId      String
+  arrivalDate     DateTime
+  roomTypeId      String
+  total           Int
+  otb             Int      @default(0) // On-the-books (booked)
+  available       Int
+  held            Int      @default(0) // Temporary holds
+  updatedAt       DateTime @updatedAt
+
+  property        Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  roomType        RoomType   @relation(fields: [roomTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, arrivalDate, roomTypeId])
+}
+
+/// Pricing decision log from HMRM engine
+model PricingDecision {
+  id                    String   @id @default(cuid())
+  propertyId            String
+  arrivalDate           DateTime
+  decisionTime          DateTime @default(now())
+  pricingMode           String   // ML_ONLY, ML_CONTROL_VARIATE, FULL_MC
+  pricesBefore          Json?
+  pricesAfter           Json?
+  expectedNetRevenue    Float
+  revenueVariance       Float?
+  confidenceLow         Float?
+  confidenceHigh        Float?
+  triggerReason         String?
+  computationMs         Int?
+  searchIntensityIndex  Float?
+  conversionProbability Float?
+
+  property              Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+/// Room hold for checkout process
+model RoomHold {
+  id              String   @id @default(cuid())
+  holdId          String   @unique
+  propertyId      String
+  roomTypeId      String
+  ratePlanId      String
+  sessionId       String
+  searchId        String?
+  arrivalDate     DateTime
+  departureDate   DateTime
+  los             Int
+  adults          Int      @default(2)
+  children        Int      @default(0)
+  pricePerNight   Float
+  totalPrice      Float
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+}
+
+/// Booking event tracking for analytics
+model BookingEvent {
+  id              String   @id @default(cuid())
+  eventId         String   @unique
+  eventType       String   // search, price_view, room_view, add_to_cart, checkout_start, booking_confirmed, booking_cancelled
+  propertyId      String?
+  arrivalDate     DateTime?
+  sessionId       String?
+  correlationId   String?
+  payload         Json
+  processed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  booking         Booking? @relation(fields: [bookingId], references: [id])
+  bookingId       String?
+}
+
+/// Feature store for real-time signals (simplified - would be Redis in production)
+model FeatureStore {
+  id              String   @id @default(cuid())
+  propertyId      String
+  arrivalDate     DateTime
+  searchIntensityIndex   Float    @default(1.0)
+  priceCheckFrequency    Float    @default(0)
+  geoDemandSpikeIndex    Float    @default(1.0)
+  cartAbandonmentRate    Float    @default(0)
+  cancellationVelocityIndex Float @default(1.0)
+  pickupPaceIndex        Float    @default(1.0)
+  competitorPriceIndex   Float    @default(1.0)
+  conversionProbability  Float    @default(0.1)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([propertyId, arrivalDate])
+}
+
+/// Session conversion tracking
+model SessionScore {
+  id                      String   @id @default(cuid())
+  sessionId               String   @unique
+  propertyId              String?
+  arrivalDate             DateTime?
+  roomType                String?
+  deviceType              String?
+  geoCountry              String?
+  priceOffered            Float?
+  searchDepth             Int      @default(0)
+  priceViews              Int      @default(0)
+  timeOnPageSeconds       Int      @default(0)
+  referrer                String?
+  hasPromoCode            Boolean  @default(false)
+  conversionProbability   Float    @default(0.1)
+  intentTier              String   @default("low")
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}

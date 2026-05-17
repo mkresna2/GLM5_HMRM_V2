@@ -1,0 +1,66 @@
+# Render Blueprint — deploy all HMRM Python microservices
+# Dashboard: New → Blueprint → connect this repo → apply
+# After deploy: set PRICING_GATEWAY_URL on Vercel to the pricing-gateway service URL
+
+services:
+  - type: web
+    name: hmrm-ml-inference
+    runtime: python
+    rootDir: mini-services
+    buildCommand: pip install -r requirements.txt
+    startCommand: python ml-inference-service/main.py
+    healthCheckPath: /health
+
+  - type: web
+    name: hmrm-monte-carlo
+    runtime: python
+    rootDir: mini-services
+    buildCommand: pip install -r requirements.txt
+    startCommand: python monte-carlo-service/main.py
+    healthCheckPath: /health
+
+  - type: web
+    name: hmrm-optimization
+    runtime: python
+    rootDir: mini-services
+    buildCommand: pip install -r requirements.txt
+    startCommand: python optimization-service/main.py
+    healthCheckPath: /health
+
+  - type: web
+    name: hmrm-engine
+    runtime: python
+    rootDir: mini-services
+    buildCommand: pip install -r requirements.txt
+    startCommand: python hmrm-engine/main.py
+    healthCheckPath: /health
+    envVars:
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: hmrm-ml-inference
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: MC_SERVICE_URL
+        fromService:
+          type: web
+          name: hmrm-monte-carlo
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: OPTIMIZATION_SERVICE_URL
+        fromService:
+          type: web
+          name: hmrm-optimization
+          envVarKey: RENDER_EXTERNAL_URL
+
+  - type: web
+    name: hmrm-pricing-gateway
+    runtime: python
+    rootDir: mini-services
+    buildCommand: pip install -r requirements.txt
+    startCommand: python pricing-gateway/main.py
+    healthCheckPath: /health
+    envVars:
+      - key: HMRM_ENGINE_URL
+        fromService:
+          type: web
+          name: hmrm-engine
+          envVarKey: RENDER_EXTERNAL_URL

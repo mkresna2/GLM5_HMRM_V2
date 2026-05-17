@@ -1,0 +1,117 @@
+# See https://help.github.com/articles/ignoring-files/
+
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# --- Environment & secrets ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+!.env.example
+
+# --- Next.js ---
+/.next/
+/out/
+*.tsbuildinfo
+
+# --- Build / production ---
+/build
+/dist
+
+# --- Logs & local dev output ---
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+bun-debug.log*
+dev.log
+server.log
+*.log
+
+# --- Database (SQLite; regenerate with prisma db push / seed) ---
+/db/*.db
+/db/*.db-journal
+/db/*.db-wal
+/db/*.db-shm
+
+# --- Prisma ---
+# Keep prisma/migrations/ committed when you use migrate dev
+
+# --- Python microservices ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+
+# ML / training artifacts (if added under mini-services)
+*.pkl
+*.joblib
+*.h5
+*.onnx
+*.pt
+*.pth
+
+# --- Docker ---
+# Local override files only; compose files stay tracked
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# --- Testing ---
+/coverage
+.nyc_output
+
+# --- Tooling caches ---
+.eslintcache
+.turbo
+.cache
+
+# --- Hosting / deploy ---
+.vercel
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Editors (optional local settings) ---
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Project-specific ---
+.claude/
+.z-ai-config
+local-*
+/skills/
+/prompt/
+/test/
+
+# Runtime upload scratch (e.g. pasted chat images); keep *.md docs in upload/
+upload/pasted_*
+
+# Generated downloads; keep folder placeholder
+download/*
+!download/README.md
+
+# TLS keys
+*.pem
